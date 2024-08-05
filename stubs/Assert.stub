@@ -23,4 +23,44 @@ class Assert
 	 */
 	public static function isNonEmptyMap($array, $message = ''): void;
 
+	/**
+     * @phpstan-assert int|numeric-string $value
+     *
+     * @param mixed  $value
+     * @param string $message
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function integerish($value, $message = ''): void;
+
+	/**
+     * @phpstan-assert int|numeric-string|null $value
+     *
+     * @param mixed  $value
+     * @param string $message
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function nullOrIntegerish($value, $message = ''): void;
+
+	/**
+     * @phpstan-assert iterable<int|numeric-string> $value
+     *
+     * @param mixed  $value
+     * @param string $message
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function allIntegerish($value, $message = ''): void;
+
+	/**
+     * @phpstan-assert iterable<int|numeric-string|null> $value
+     *
+     * @param mixed  $value
+     * @param string $message
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function allNullOrIntegerish($value, $message = ''): void;
+
 }
