@@ -119,6 +119,14 @@ class Foo
 		Assert::isInstanceOf($e, $name);
 	}
 
+	public function testStartsWith(string $a): void
+	{
+		Assert::startsWith("value", "val");
+		Assert::startsWith("value", $a);
+		Assert::startsWith("value", $a);
+		Assert::startsWith("value", "bix");
+	}
+
 }
 
 interface Bar {};

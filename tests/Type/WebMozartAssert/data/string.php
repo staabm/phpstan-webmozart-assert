@@ -188,4 +188,11 @@ class TestStrings
 		assertType('non-empty-string', $a);
 	}
 
+	public function testStartsWithMixedHaystack($haystack, string $a): void
+	{
+		assertType('mixed', $haystack);
+		Assert::startsWith($haystack, $a);
+		assertType('string', $haystack);
+	}
+
 }

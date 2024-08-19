@@ -105,6 +105,10 @@ class ImpossibleCheckTypeMethodCallRuleTest extends RuleTestCase
 				'Call to static method Webmozart\Assert\Assert::isInstanceOf() with Exception and class-string<Exception> will always evaluate to true.',
 				119,
 			],
+			[
+				'Call to static method Webmozart\Assert\Assert::startsWith() with \'value\' and string will always evaluate to true.',
+				126,
+			],
 		]);
 	}
 

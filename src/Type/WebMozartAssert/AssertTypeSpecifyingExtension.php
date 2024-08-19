@@ -757,12 +757,22 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			];
 
 			foreach (['contains', 'startsWith', 'endsWith'] as $name) {
-				$this->resolvers[$name] = function (Scope $scope, Arg $value, Arg $subString) use ($name): array {
+				$this->resolvers[$name] = static function (Scope $scope, Arg $value, Arg $subString) use ($name): array {
 					if ($scope->getType($subString->value)->isNonEmptyString()->yes()) {
 						return self::createIsNonEmptyStringAndSomethingExprPair($name, [$value, $subString]);
 					}
 
-					return [$this->resolvers['string']($scope, $value), null];
+					$expr = new FuncCall(
+						new Name('is_string'),
+						[$value]
+					);
+
+					$rootExpr = new BooleanAnd(
+						$expr,
+						new FuncCall(new Name('FAUX_FUNCTION_ ' . $name), [$value, $subString])
+					);
+
+					return [$expr, $rootExpr];
 				};
 			}
 
