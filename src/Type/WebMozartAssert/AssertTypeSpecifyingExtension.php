@@ -61,13 +61,11 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 {
 
 	/** @var Closure[] */
-	private $resolvers;
+	private array $resolvers;
 
-	/** @var ReflectionProvider */
-	private $reflectionProvider;
+	private ReflectionProvider $reflectionProvider;
 
-	/** @var TypeSpecifier */
-	private $typeSpecifier;
+	private TypeSpecifier $typeSpecifier;
 
 	public function __construct(ReflectionProvider $reflectionProvider)
 	{
@@ -138,9 +136,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 				$staticMethodReflection->getName(),
 				$node,
 				$scope,
-				static function (Type $type) {
-					return TypeCombinator::addNull($type);
-				}
+				static fn (Type $type) => TypeCombinator::addNull($type),
 			);
 		}
 
@@ -148,7 +144,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			return $this->handleAllNot(
 				$staticMethodReflection->getName(),
 				$node,
-				$scope
+				$scope,
 			);
 		}
 
@@ -156,7 +152,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			return $this->handleAll(
 				$staticMethodReflection->getName(),
 				$node,
-				$scope
+				$scope,
 			);
 		}
 
@@ -169,7 +165,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			$scope,
 			$expr,
 			TypeSpecifierContext::createTruthy(),
-			$rootExpr
+			$rootExpr,
 		);
 
 		return $this->specifyRootExprIfSet($rootExpr, $specifiedTypes);
@@ -206,8 +202,8 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 				$expr,
 				new Identical(
 					$args[0]->value,
-					new ConstFetch(new Name('null'))
-				)
+					new ConstFetch(new Name('null')),
+				),
 			);
 		}
 
@@ -221,217 +217,169 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 	{
 		if ($this->resolvers === null) {
 			$this->resolvers = [
-				'integer' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
+				'integer' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_int'),
+					[$value],
+				),
+				'positiveInteger' => static fn (Scope $scope, Arg $value): Expr => new BooleanAnd(
+					new FuncCall(
 						new Name('is_int'),
-						[$value]
-					);
-				},
-				'positiveInteger' => static function (Scope $scope, Arg $value): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_int'),
-							[$value]
-						),
-						new Greater(
-							$value->value,
-							new LNumber(0)
-						)
-					);
-				},
-				'string' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
+						[$value],
+					),
+					new Greater(
+						$value->value,
+						new LNumber(0),
+					),
+				),
+				'string' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_string'),
+					[$value],
+				),
+				'stringNotEmpty' => static fn (Scope $scope, Arg $value): Expr => new BooleanAnd(
+					new FuncCall(
 						new Name('is_string'),
-						[$value]
-					);
-				},
-				'stringNotEmpty' => static function (Scope $scope, Arg $value): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_string'),
-							[$value]
-						),
-						new NotIdentical(
-							$value->value,
-							new String_('')
-						)
-					);
-				},
-				'float' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
-						new Name('is_float'),
-						[$value]
-					);
-				},
-				'integerish' => static function (Scope $scope, Arg $value): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_numeric'),
-							[$value]
-						),
-						new Equal(
-							$value->value,
-							new Int_(
-								$value->value
-							)
-						)
-					);
-				},
-				'numeric' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
+						[$value],
+					),
+					new NotIdentical(
+						$value->value,
+						new String_(''),
+					),
+				),
+				'float' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_float'),
+					[$value],
+				),
+				'integerish' => static fn (Scope $scope, Arg $value): Expr => new BooleanAnd(
+					new FuncCall(
 						new Name('is_numeric'),
-						[$value]
-					);
-				},
-				'natural' => static function (Scope $scope, Arg $value): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_int'),
-							[$value]
-						),
-						new GreaterOrEqual(
+						[$value],
+					),
+					new Equal(
+						$value->value,
+						new Int_(
 							$value->value,
-							new LNumber(0)
-						)
-					);
-				},
-				'boolean' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
-						new Name('is_bool'),
-						[$value]
-					);
-				},
-				'scalar' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
-						new Name('is_scalar'),
-						[$value]
-					);
-				},
-				'object' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
-						new Name('is_object'),
-						[$value]
-					);
-				},
-				'resource' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
-						new Name('is_resource'),
-						[$value]
-					);
-				},
-				'isCallable' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
-						new Name('is_callable'),
-						[$value]
-					);
-				},
-				'isArray' => static function (Scope $scope, Arg $value): Expr {
-					return new FuncCall(
+						),
+					),
+				),
+				'numeric' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_numeric'),
+					[$value],
+				),
+				'natural' => static fn (Scope $scope, Arg $value): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_int'),
+						[$value],
+					),
+					new GreaterOrEqual(
+						$value->value,
+						new LNumber(0),
+					),
+				),
+				'boolean' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_bool'),
+					[$value],
+				),
+				'scalar' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_scalar'),
+					[$value],
+				),
+				'object' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_object'),
+					[$value],
+				),
+				'resource' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_resource'),
+					[$value],
+				),
+				'isCallable' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_callable'),
+					[$value],
+				),
+				'isArray' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
+					new Name('is_array'),
+					[$value],
+				),
+				'isTraversable' => fn (Scope $scope, Arg $value): Expr => $this->resolvers['isIterable']($scope, $value),
+				'isIterable' => static fn (Scope $scope, Arg $expr): Expr => new BooleanOr(
+					new FuncCall(
 						new Name('is_array'),
-						[$value]
-					);
-				},
-				'isTraversable' => function (Scope $scope, Arg $value): Expr {
-					return $this->resolvers['isIterable']($scope, $value);
-				},
-				'isIterable' => static function (Scope $scope, Arg $expr): Expr {
-					return new BooleanOr(
+						[$expr],
+					),
+					new Instanceof_(
+						$expr->value,
+						new Name(Traversable::class),
+					),
+				),
+				'isList' => static fn (Scope $scope, Arg $expr): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_array'),
+						[$expr],
+					),
+					new Identical(
+						$expr->value,
 						new FuncCall(
-							new Name('is_array'),
-							[$expr]
+							new Name('array_values'),
+							[$expr],
 						),
-						new Instanceof_(
-							$expr->value,
-							new Name(Traversable::class)
-						)
-					);
-				},
-				'isList' => static function (Scope $scope, Arg $expr): Expr {
-					return new BooleanAnd(
+					),
+				),
+				'isNonEmptyList' => fn (Scope $scope, Arg $expr): Expr => new BooleanAnd(
+					$this->resolvers['isList']($scope, $expr),
+					new NotIdentical(
+						$expr->value,
+						new Array_(),
+					),
+				),
+				'isMap' => static fn (Scope $scope, Arg $expr): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_array'),
+						[$expr],
+					),
+					new Identical(
 						new FuncCall(
-							new Name('is_array'),
-							[$expr]
+							new Name('array_filter'),
+							[$expr, new Arg(new String_('is_string')), new Arg(new ConstFetch(new Name('ARRAY_FILTER_USE_KEY')))],
 						),
-						new Identical(
-							$expr->value,
-							new FuncCall(
-								new Name('array_values'),
-								[$expr]
-							)
-						)
-					);
-				},
-				'isNonEmptyList' => function (Scope $scope, Arg $expr): Expr {
-					return new BooleanAnd(
-						$this->resolvers['isList']($scope, $expr),
-						new NotIdentical(
-							$expr->value,
-							new Array_()
-						)
-					);
-				},
-				'isMap' => static function (Scope $scope, Arg $expr): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_array'),
-							[$expr]
-						),
-						new Identical(
-							new FuncCall(
-								new Name('array_filter'),
-								[$expr, new Arg(new String_('is_string')), new Arg(new ConstFetch(new Name('ARRAY_FILTER_USE_KEY')))]
-							),
-							$expr->value
-						)
-					);
-				},
-				'isNonEmptyMap' => function (Scope $scope, Arg $expr): Expr {
-					return new BooleanAnd(
-						$this->resolvers['isMap']($scope, $expr),
-						new NotIdentical(
-							$expr->value,
-							new Array_()
-						)
-					);
-				},
-				'isCountable' => static function (Scope $scope, Arg $expr): Expr {
-					return new BooleanOr(
-						new FuncCall(
-							new Name('is_array'),
-							[$expr]
-						),
-						new Instanceof_(
-							$expr->value,
-							new Name(Countable::class)
-						)
-					);
-				},
+						$expr->value,
+					),
+				),
+				'isNonEmptyMap' => fn (Scope $scope, Arg $expr): Expr => new BooleanAnd(
+					$this->resolvers['isMap']($scope, $expr),
+					new NotIdentical(
+						$expr->value,
+						new Array_(),
+					),
+				),
+				'isCountable' => static fn (Scope $scope, Arg $expr): Expr => new BooleanOr(
+					new FuncCall(
+						new Name('is_array'),
+						[$expr],
+					),
+					new Instanceof_(
+						$expr->value,
+						new Name(Countable::class),
+					),
+				),
 				'isInstanceOf' => static function (Scope $scope, Arg $expr, Arg $class): ?Expr {
 					$classType = $scope->getType($class->value);
 					$classNames = $classType->getObjectTypeOrClassStringObjectType()->getObjectClassNames();
 
 					if (count($classNames) !== 0) {
-						return self::implodeExpr(array_map(static function (string $className) use ($expr): Expr {
-							return new Instanceof_($expr->value, new Name($className));
-						}, $classNames), BooleanOr::class);
+						return self::implodeExpr(array_map(static fn (string $className): Expr => new Instanceof_($expr->value, new Name($className)), $classNames), BooleanOr::class);
 					}
 
 					return new FuncCall(
 						new Name('is_object'),
-						[$expr]
+						[$expr],
 					);
 				},
-				'isInstanceOfAny' => function (Scope $scope, Arg $expr, Arg $classes): ?Expr {
-					return self::buildAnyOfExpr($scope, $expr, $classes, $this->resolvers['isInstanceOf']);
-				},
+				'isInstanceOfAny' => fn (Scope $scope, Arg $expr, Arg $classes): ?Expr => self::buildAnyOfExpr($scope, $expr, $classes, $this->resolvers['isInstanceOf']),
 				'notInstanceOf' => static function (Scope $scope, Arg $expr, Arg $class): ?Expr {
 					$classType = $scope->getType($class->value);
 					$classNames = $classType->getObjectTypeOrClassStringObjectType()->getObjectClassNames();
 
 					if (count($classNames) !== 0) {
-						$result = self::implodeExpr(array_map(static function (string $className) use ($expr): Expr {
-							return new Instanceof_($expr->value, new Name($className));
-						}, $classNames), BooleanOr::class);
+						$result = self::implodeExpr(array_map(static fn (string $className): Expr => new Instanceof_($expr->value, new Name($className)), $classNames), BooleanOr::class);
 
 						if ($result !== null) {
 							return new BooleanNot($result);
@@ -446,15 +394,11 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 					return new FuncCall(
 						new Name('is_a'),
-						[$expr, $class, new Arg(new ConstFetch(new Name($allowString ? 'true' : 'false')))]
+						[$expr, $class, new Arg(new ConstFetch(new Name($allowString ? 'true' : 'false')))],
 					);
 				},
-				'isAnyOf' => function (Scope $scope, Arg $value, Arg $classes): ?Expr {
-					return self::buildAnyOfExpr($scope, $value, $classes, $this->resolvers['isAOf']);
-				},
-				'isNotA' => function (Scope $scope, Arg $value, Arg $class): Expr {
-					return new BooleanNot($this->resolvers['isAOf']($scope, $value, $class));
-				},
+				'isAnyOf' => fn (Scope $scope, Arg $value, Arg $classes): ?Expr => self::buildAnyOfExpr($scope, $value, $classes, $this->resolvers['isAOf']),
+				'isNotA' => fn (Scope $scope, Arg $value, Arg $class): Expr => new BooleanNot($this->resolvers['isAOf']($scope, $value, $class)),
 				'implementsInterface' => function (Scope $scope, Arg $expr, Arg $class): ?Expr {
 					$classType = $scope->getType($class->value)->getClassStringObjectType();
 					$classNames = $classType->getObjectClassNames();
@@ -474,286 +418,220 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 					return $this->resolvers['subclassOf']($scope, $expr, $class);
 				},
-				'keyExists' => static function (Scope $scope, Arg $array, Arg $key): Expr {
-					return new FuncCall(
-						new Name('array_key_exists'),
-						[$key, $array]
-					);
-				},
-				'keyNotExists' => function (Scope $scope, Arg $array, Arg $key): Expr {
-					return new BooleanNot($this->resolvers['keyExists']($scope, $array, $key));
-				},
-				'validArrayKey' => static function (Scope $scope, Arg $value): Expr {
-					return new BooleanOr(
-						new FuncCall(
-							new Name('is_int'),
-							[$value]
-						),
-						new FuncCall(
-							new Name('is_string'),
-							[$value]
-						)
-					);
-				},
-				'true' => static function (Scope $scope, Arg $expr): Expr {
-					return new Identical(
-						$expr->value,
-						new ConstFetch(new Name('true'))
-					);
-				},
-				'false' => static function (Scope $scope, Arg $expr): Expr {
-					return new Identical(
-						$expr->value,
-						new ConstFetch(new Name('false'))
-					);
-				},
-				'null' => static function (Scope $scope, Arg $expr): Expr {
-					return new Identical(
-						$expr->value,
-						new ConstFetch(new Name('null'))
-					);
-				},
-				'notFalse' => static function (Scope $scope, Arg $expr): Expr {
-					return new NotIdentical(
-						$expr->value,
-						new ConstFetch(new Name('false'))
-					);
-				},
-				'notNull' => static function (Scope $scope, Arg $expr): Expr {
-					return new NotIdentical(
-						$expr->value,
-						new ConstFetch(new Name('null'))
-					);
-				},
-				'eq' => static function (Scope $scope, Arg $value, Arg $value2): Expr {
-					return new Equal(
+				'keyExists' => static fn (Scope $scope, Arg $array, Arg $key): Expr => new FuncCall(
+					new Name('array_key_exists'),
+					[$key, $array],
+				),
+				'keyNotExists' => fn (Scope $scope, Arg $array, Arg $key): Expr => new BooleanNot($this->resolvers['keyExists']($scope, $array, $key)),
+				'validArrayKey' => static fn (Scope $scope, Arg $value): Expr => new BooleanOr(
+					new FuncCall(
+						new Name('is_int'),
+						[$value],
+					),
+					new FuncCall(
+						new Name('is_string'),
+						[$value],
+					),
+				),
+				'true' => static fn (Scope $scope, Arg $expr): Expr => new Identical(
+					$expr->value,
+					new ConstFetch(new Name('true')),
+				),
+				'false' => static fn (Scope $scope, Arg $expr): Expr => new Identical(
+					$expr->value,
+					new ConstFetch(new Name('false')),
+				),
+				'null' => static fn (Scope $scope, Arg $expr): Expr => new Identical(
+					$expr->value,
+					new ConstFetch(new Name('null')),
+				),
+				'notFalse' => static fn (Scope $scope, Arg $expr): Expr => new NotIdentical(
+					$expr->value,
+					new ConstFetch(new Name('false')),
+				),
+				'notNull' => static fn (Scope $scope, Arg $expr): Expr => new NotIdentical(
+					$expr->value,
+					new ConstFetch(new Name('null')),
+				),
+				'eq' => static fn (Scope $scope, Arg $value, Arg $value2): Expr => new Equal(
+					$value->value,
+					$value2->value,
+				),
+				'notEq' => fn (Scope $scope, Arg $value, Arg $value2): Expr => new BooleanNot($this->resolvers['eq']($scope, $value, $value2)),
+				'same' => static fn (Scope $scope, Arg $value1, Arg $value2): Expr => new Identical(
+					$value1->value,
+					$value2->value,
+				),
+				'notSame' => static fn (Scope $scope, Arg $value1, Arg $value2): Expr => new NotIdentical(
+					$value1->value,
+					$value2->value,
+				),
+				'greaterThan' => static fn (Scope $scope, Arg $value, Arg $limit): Expr => new Greater(
+					$value->value,
+					$limit->value,
+				),
+				'greaterThanEq' => static fn (Scope $scope, Arg $value, Arg $limit): Expr => new GreaterOrEqual(
+					$value->value,
+					$limit->value,
+				),
+				'lessThan' => static fn (Scope $scope, Arg $value, Arg $limit): Expr => new Smaller(
+					$value->value,
+					$limit->value,
+				),
+				'lessThanEq' => static fn (Scope $scope, Arg $value, Arg $limit): Expr => new SmallerOrEqual(
+					$value->value,
+					$limit->value,
+				),
+				'range' => static fn (Scope $scope, Arg $value, Arg $min, Arg $max): Expr => new BooleanAnd(
+					new GreaterOrEqual(
 						$value->value,
-						$value2->value
-					);
-				},
-				'notEq' => function (Scope $scope, Arg $value, Arg $value2): Expr {
-					return new BooleanNot($this->resolvers['eq']($scope, $value, $value2));
-				},
-				'same' => static function (Scope $scope, Arg $value1, Arg $value2): Expr {
-					return new Identical(
-						$value1->value,
-						$value2->value
-					);
-				},
-				'notSame' => static function (Scope $scope, Arg $value1, Arg $value2): Expr {
-					return new NotIdentical(
-						$value1->value,
-						$value2->value
-					);
-				},
-				'greaterThan' => static function (Scope $scope, Arg $value, Arg $limit): Expr {
-					return new Greater(
+						$min->value,
+					),
+					new SmallerOrEqual(
 						$value->value,
-						$limit->value
-					);
-				},
-				'greaterThanEq' => static function (Scope $scope, Arg $value, Arg $limit): Expr {
-					return new GreaterOrEqual(
-						$value->value,
-						$limit->value
-					);
-				},
-				'lessThan' => static function (Scope $scope, Arg $value, Arg $limit): Expr {
-					return new Smaller(
-						$value->value,
-						$limit->value
-					);
-				},
-				'lessThanEq' => static function (Scope $scope, Arg $value, Arg $limit): Expr {
-					return new SmallerOrEqual(
-						$value->value,
-						$limit->value
-					);
-				},
-				'range' => static function (Scope $scope, Arg $value, Arg $min, Arg $max): Expr {
-					return new BooleanAnd(
-						new GreaterOrEqual(
-							$value->value,
-							$min->value
-						),
-						new SmallerOrEqual(
-							$value->value,
-							$max->value
-						)
-					);
-				},
-				'subclassOf' => static function (Scope $scope, Arg $expr, Arg $class): Expr {
-					return new FuncCall(
-						new Name('is_subclass_of'),
-						[
-							new Arg($expr->value),
-							$class,
-						]
-					);
-				},
-				'classExists' => static function (Scope $scope, Arg $class): Expr {
-					return new FuncCall(
-						new Name('class_exists'),
-						[$class]
-					);
-				},
-				'interfaceExists' => static function (Scope $scope, Arg $class): Expr {
-					return new FuncCall(
-						new Name('interface_exists'),
-						[$class]
-					);
-				},
-				'count' => static function (Scope $scope, Arg $array, Arg $number): Expr {
-					return new Identical(
+						$max->value,
+					),
+				),
+				'subclassOf' => static fn (Scope $scope, Arg $expr, Arg $class): Expr => new FuncCall(
+					new Name('is_subclass_of'),
+					[
+						new Arg($expr->value),
+						$class,
+					],
+				),
+				'classExists' => static fn (Scope $scope, Arg $class): Expr => new FuncCall(
+					new Name('class_exists'),
+					[$class],
+				),
+				'interfaceExists' => static fn (Scope $scope, Arg $class): Expr => new FuncCall(
+					new Name('interface_exists'),
+					[$class],
+				),
+				'count' => static fn (Scope $scope, Arg $array, Arg $number): Expr => new Identical(
+					new FuncCall(
+						new Name('count'),
+						[$array],
+					),
+					$number->value,
+				),
+				'minCount' => static fn (Scope $scope, Arg $array, Arg $min): Expr => new GreaterOrEqual(
+					new FuncCall(
+						new Name('count'),
+						[$array],
+					),
+					$min->value,
+				),
+				'maxCount' => static fn (Scope $scope, Arg $array, Arg $max): Expr => new SmallerOrEqual(
+					new FuncCall(
+						new Name('count'),
+						[$array],
+					),
+					$max->value,
+				),
+				'countBetween' => static fn (Scope $scope, Arg $array, Arg $min, Arg $max): Expr => new BooleanAnd(
+					new GreaterOrEqual(
 						new FuncCall(
 							new Name('count'),
-							[$array]
+							[$array],
 						),
-						$number->value
-					);
-				},
-				'minCount' => static function (Scope $scope, Arg $array, Arg $min): Expr {
-					return new GreaterOrEqual(
+						$min->value,
+					),
+					new SmallerOrEqual(
 						new FuncCall(
 							new Name('count'),
-							[$array]
+							[$array],
 						),
-						$min->value
-					);
-				},
-				'maxCount' => static function (Scope $scope, Arg $array, Arg $max): Expr {
-					return new SmallerOrEqual(
+						$max->value,
+					),
+				),
+				'length' => static fn (Scope $scope, Arg $value, Arg $length): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_string'),
+						[$value],
+					),
+					new Identical(
 						new FuncCall(
-							new Name('count'),
-							[$array]
+							new Name('strlen'),
+							[$value],
 						),
-						$max->value
-					);
-				},
-				'countBetween' => static function (Scope $scope, Arg $array, Arg $min, Arg $max): Expr {
-					return new BooleanAnd(
-						new GreaterOrEqual(
-							new FuncCall(
-								new Name('count'),
-								[$array]
-							),
-							$min->value
-						),
-						new SmallerOrEqual(
-							new FuncCall(
-								new Name('count'),
-								[$array]
-							),
-							$max->value
-						)
-					);
-				},
-				'length' => static function (Scope $scope, Arg $value, Arg $length): Expr {
-					return new BooleanAnd(
+						$length->value,
+					),
+				),
+				'minLength' => static fn (Scope $scope, Arg $value, Arg $min): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_string'),
+						[$value],
+					),
+					new GreaterOrEqual(
 						new FuncCall(
-							new Name('is_string'),
-							[$value]
+							new Name('strlen'),
+							[$value],
 						),
-						new Identical(
-							new FuncCall(
-								new Name('strlen'),
-								[$value]
-							),
-							$length->value
-						)
-					);
-				},
-				'minLength' => static function (Scope $scope, Arg $value, Arg $min): Expr {
-					return new BooleanAnd(
+						$min->value,
+					),
+				),
+				'maxLength' => static fn (Scope $scope, Arg $value, Arg $max): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_string'),
+						[$value],
+					),
+					new SmallerOrEqual(
 						new FuncCall(
-							new Name('is_string'),
-							[$value]
+							new Name('strlen'),
+							[$value],
 						),
+						$max->value,
+					),
+				),
+				'lengthBetween' => static fn (Scope $scope, Arg $value, Arg $min, Arg $max): Expr => new BooleanAnd(
+					new FuncCall(
+						new Name('is_string'),
+						[$value],
+					),
+					new BooleanAnd(
 						new GreaterOrEqual(
 							new FuncCall(
 								new Name('strlen'),
-								[$value]
+								[$value],
 							),
-							$min->value
-						)
-					);
-				},
-				'maxLength' => static function (Scope $scope, Arg $value, Arg $max): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_string'),
-							[$value]
+							$min->value,
 						),
 						new SmallerOrEqual(
 							new FuncCall(
 								new Name('strlen'),
-								[$value]
+								[$value],
 							),
-							$max->value
-						)
-					);
-				},
-				'lengthBetween' => static function (Scope $scope, Arg $value, Arg $min, Arg $max): Expr {
-					return new BooleanAnd(
-						new FuncCall(
-							new Name('is_string'),
-							[$value]
+							$max->value,
 						),
-						new BooleanAnd(
-							new GreaterOrEqual(
-								new FuncCall(
-									new Name('strlen'),
-									[$value]
-								),
-								$min->value
-							),
-							new SmallerOrEqual(
-								new FuncCall(
-									new Name('strlen'),
-									[$value]
-								),
-								$max->value
-							)
-						)
-					);
-				},
-				'inArray' => static function (Scope $scope, Arg $needle, Arg $array): Expr {
-					return new FuncCall(
-						new Name('in_array'),
-						[
-							$needle,
-							$array,
-							new Arg(new ConstFetch(new Name('true'))),
-						]
-					);
-				},
-				'oneOf' => function (Scope $scope, Arg $needle, Arg $array): Expr {
-					return $this->resolvers['inArray']($scope, $needle, $array);
-				},
-				'methodExists' => static function (Scope $scope, Arg $object, Arg $method): Expr {
-					return new FuncCall(
-						new Name('method_exists'),
-						[$object, $method]
-					);
-				},
-				'propertyExists' => static function (Scope $scope, Arg $object, Arg $property): Expr {
-					return new FuncCall(
-						new Name('property_exists'),
-						[$object, $property]
-					);
-				},
-				'isArrayAccessible' => static function (Scope $scope, Arg $expr): Expr {
-					return new BooleanOr(
-						new FuncCall(
-							new Name('is_array'),
-							[$expr]
-						),
-						new Instanceof_(
-							$expr->value,
-							new Name(ArrayAccess::class)
-						)
-					);
-				},
+					),
+				),
+				'inArray' => static fn (Scope $scope, Arg $needle, Arg $array): Expr => new FuncCall(
+					new Name('in_array'),
+					[
+						$needle,
+						$array,
+						new Arg(new ConstFetch(new Name('true'))),
+					],
+				),
+				'oneOf' => fn (Scope $scope, Arg $needle, Arg $array): Expr => $this->resolvers['inArray']($scope, $needle, $array),
+				'methodExists' => static fn (Scope $scope, Arg $object, Arg $method): Expr => new FuncCall(
+					new Name('method_exists'),
+					[$object, $method],
+				),
+				'propertyExists' => static fn (Scope $scope, Arg $object, Arg $property): Expr => new FuncCall(
+					new Name('property_exists'),
+					[$object, $property],
+				),
+				'isArrayAccessible' => static fn (Scope $scope, Arg $expr): Expr => new BooleanOr(
+					new FuncCall(
+						new Name('is_array'),
+						[$expr],
+					),
+					new Instanceof_(
+						$expr->value,
+						new Name(ArrayAccess::class),
+					),
+				),
 			];
 
 			foreach (['contains', 'startsWith', 'endsWith'] as $name) {
@@ -764,12 +642,12 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 					$expr = new FuncCall(
 						new Name('is_string'),
-						[$value]
+						[$value],
 					);
 
 					$rootExpr = new BooleanAnd(
 						$expr,
-						new FuncCall(new Name('FAUX_FUNCTION_ ' . $name), [$value, $subString])
+						new FuncCall(new Name('FAUX_FUNCTION_ ' . $name), [$value, $subString]),
 					);
 
 					return [$expr, $rootExpr];
@@ -792,9 +670,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 				'notWhitespaceOnly',
 			];
 			foreach ($assertionsResultingAtLeastInNonEmptyString as $name) {
-				$this->resolvers[$name] = static function (Scope $scope, Arg $value) use ($name): array {
-					return self::createIsNonEmptyStringAndSomethingExprPair($name, [$value]);
-				};
+				$this->resolvers[$name] = static fn (Scope $scope, Arg $value): array => self::createIsNonEmptyStringAndSomethingExprPair($name, [$value]);
 			}
 		}
 
@@ -811,9 +687,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			return $this->allArrayOrIterable(
 				$scope,
 				$node->getArgs()[0]->value,
-				static function (Type $type): Type {
-					return TypeCombinator::removeNull($type);
-				}
+				static fn (Type $type): Type => TypeCombinator::removeNull($type),
 			);
 		}
 
@@ -828,9 +702,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			return $this->allArrayOrIterable(
 				$scope,
 				$node->getArgs()[0]->value,
-				static function (Type $type) use ($classNameType): Type {
-					return TypeCombinator::remove($type, $classNameType);
-				}
+				static fn (Type $type): Type => TypeCombinator::remove($type, $classNameType),
 			);
 		}
 
@@ -839,9 +711,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			return $this->allArrayOrIterable(
 				$scope,
 				$node->getArgs()[0]->value,
-				static function (Type $type) use ($valueType): Type {
-					return TypeCombinator::remove($type, $valueType);
-				}
+				static fn (Type $type): Type => TypeCombinator::remove($type, $valueType),
 			);
 		}
 
@@ -869,7 +739,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			$scope,
 			$expr,
 			TypeSpecifierContext::createTruthy(),
-			$rootExpr
+			$rootExpr,
 		);
 
 		$sureNotTypes = $specifiedTypes->getSureNotTypes();
@@ -886,10 +756,8 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			return $this->allArrayOrIterable(
 				$scope,
 				$node->getArgs()[0]->value,
-				static function () use ($type): Type {
-					return $type;
-				},
-				$rootExpr
+				static fn (): Type => $type,
+				$rootExpr,
 			);
 		}
 
@@ -946,7 +814,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			TypeSpecifierContext::createTruthy(),
 			false,
 			$scope,
-			$rootExpr
+			$rootExpr,
 		);
 
 		return $this->specifyRootExprIfSet($rootExpr, $specifiedTypes);
@@ -965,10 +833,8 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 		return array_reduce(
 			$expressions,
-			static function (Expr $carry, Expr $item) use ($binaryOp) {
-				return new $binaryOp($carry, $item);
-			},
-			$firstExpression
+			static fn (Expr $carry, Expr $item) => new $binaryOp($carry, $item),
+			$firstExpression,
 		);
 	}
 
@@ -1004,17 +870,17 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 		$expr = new BooleanAnd(
 			new FuncCall(
 				new Name('is_string'),
-				[$args[0]]
+				[$args[0]],
 			),
 			new NotIdentical(
 				$args[0]->value,
-				new String_('')
-			)
+				new String_(''),
+			),
 		);
 
 		$rootExpr = new BooleanAnd(
 			$expr,
-			new FuncCall(new Name('FAUX_FUNCTION_ ' . $name), $args)
+			new FuncCall(new Name('FAUX_FUNCTION_ ' . $name), $args),
 		);
 
 		return [$expr, $rootExpr];
@@ -1028,7 +894,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 		// Makes consecutive calls with a rootExpr adding unknown info via FAUX_FUNCTION evaluate to true
 		return $specifiedTypes->unionWith(
-			$this->typeSpecifier->create($rootExpr, new ConstantBooleanType(true), TypeSpecifierContext::createTruthy())
+			$this->typeSpecifier->create($rootExpr, new ConstantBooleanType(true), TypeSpecifierContext::createTruthy()),
 		);
 	}
 
