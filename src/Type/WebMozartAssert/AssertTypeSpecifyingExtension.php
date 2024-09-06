@@ -215,7 +215,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 	 */
 	private function getExpressionResolvers(): array
 	{
-		if ($this->resolvers === null) {
+		if (!isset($this->resolvers)) {
 			$this->resolvers = [
 				'integer' => static fn (Scope $scope, Arg $value): Expr => new FuncCall(
 					new Name('is_int'),
@@ -840,16 +840,12 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 	private static function buildAnyOfExpr(Scope $scope, Arg $value, Arg $items, callable $resolver): ?Expr
 	{
-		if (!$items->value instanceof Array_ || $items->value->items === null) {
+		if (!$items->value instanceof Array_) {
 			return null;
 		}
 
 		$resolvers = [];
 		foreach ($items->value->items as $key => $item) {
-			if ($item === null) {
-				continue;
-			}
-
 			$resolved = $resolver($scope, $value, new Arg($item->value));
 			if ($resolved === null) {
 				continue;
