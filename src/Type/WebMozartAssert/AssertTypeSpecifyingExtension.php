@@ -165,10 +165,9 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			$scope,
 			$expr,
 			TypeSpecifierContext::createTruthy(),
-			$rootExpr,
-		);
+		)->setRootExpr($rootExpr ?? $expr);
 
-		return $this->specifyRootExprIfSet($rootExpr, $specifiedTypes);
+		return $this->specifyRootExprIfSet($rootExpr, $scope, $specifiedTypes);
 	}
 
 	/**
@@ -688,6 +687,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 				$scope,
 				$node->getArgs()[0]->value,
 				static fn (Type $type): Type => TypeCombinator::removeNull($type),
+				null,
 			);
 		}
 
@@ -703,6 +703,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 				$scope,
 				$node->getArgs()[0]->value,
 				static fn (Type $type): Type => TypeCombinator::remove($type, $classNameType),
+				null,
 			);
 		}
 
@@ -712,6 +713,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 				$scope,
 				$node->getArgs()[0]->value,
 				static fn (Type $type): Type => TypeCombinator::remove($type, $valueType),
+				null,
 			);
 		}
 
@@ -739,8 +741,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			$scope,
 			$expr,
 			TypeSpecifierContext::createTruthy(),
-			$rootExpr,
-		);
+		)->setRootExpr($rootExpr ?? $expr);
 
 		$sureNotTypes = $specifiedTypes->getSureNotTypes();
 		foreach ($specifiedTypes->getSureTypes() as $exprStr => [$exprNode, $type]) {
@@ -768,7 +769,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 		Scope $scope,
 		Expr $expr,
 		Closure $typeCallback,
-		?Expr $rootExpr = null
+		?Expr $rootExpr
 	): SpecifiedTypes
 	{
 		$currentType = TypeCombinator::intersect($scope->getType($expr), new IterableType(new MixedType(), new MixedType()));
@@ -812,12 +813,10 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 			$expr,
 			$specifiedType,
 			TypeSpecifierContext::createTruthy(),
-			false,
 			$scope,
-			$rootExpr,
-		);
+		)->setRootExpr($rootExpr);
 
-		return $this->specifyRootExprIfSet($rootExpr, $specifiedTypes);
+		return $this->specifyRootExprIfSet($rootExpr, $scope, $specifiedTypes);
 	}
 
 	/**
@@ -882,7 +881,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 		return [$expr, $rootExpr];
 	}
 
-	private function specifyRootExprIfSet(?Expr $rootExpr, SpecifiedTypes $specifiedTypes): SpecifiedTypes
+	private function specifyRootExprIfSet(?Expr $rootExpr, Scope $scope, SpecifiedTypes $specifiedTypes): SpecifiedTypes
 	{
 		if ($rootExpr === null) {
 			return $specifiedTypes;
@@ -890,7 +889,7 @@ class AssertTypeSpecifyingExtension implements StaticMethodTypeSpecifyingExtensi
 
 		// Makes consecutive calls with a rootExpr adding unknown info via FAUX_FUNCTION evaluate to true
 		return $specifiedTypes->unionWith(
-			$this->typeSpecifier->create($rootExpr, new ConstantBooleanType(true), TypeSpecifierContext::createTruthy()),
+			$this->typeSpecifier->create($rootExpr, new ConstantBooleanType(true), TypeSpecifierContext::createTruthy(), $scope),
 		);
 	}
 
