@@ -64,7 +64,7 @@ class ComparisonTest
 		assertType('non-falsy-string', $a);
 
 		Assert::notEmpty($b);
-		assertType("mixed~0|0.0|''|'0'|array{}|false|null", $b);
+		assertType("mixed~(0|0.0|''|'0'|array{}|false|null)", $b);
 
 		Assert::notEmpty($c);
 		assertType('non-falsy-string', $c);
