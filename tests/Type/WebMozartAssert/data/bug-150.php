@@ -13,7 +13,7 @@ class Bug150
 		Assert::isArray($data);
 		Assert::keyExists($data, 'sniffs');
 		Assert::isArray($data['sniffs']);
-		assertType("array&hasOffsetValue('sniffs', array)", $data);
+		assertType("non-empty-array&hasOffsetValue('sniffs', array<mixed, mixed>)", $data);
 
 		foreach ($data['sniffs'] as $sniffName) {
 			Assert::string($sniffName);

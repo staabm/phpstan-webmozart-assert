@@ -155,10 +155,10 @@ class CollectionTest
 		assertType('array<array{id: int}>', $a);
 
 		Assert::allKeyExists($b, 'id');
-		assertType('array<int, array<string, mixed>&hasOffset(\'id\')>', $b);
+		assertType('array<int, non-empty-array<string, mixed>&hasOffset(\'id\')>', $b);
 
 		Assert::allKeyExists($c, 'id');
-		assertType('array<array&hasOffset(\'id\')>', $c);
+		assertType('array<non-empty-array&hasOffset(\'id\')>', $c);
 	}
 
 	/**

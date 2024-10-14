@@ -46,7 +46,7 @@ class HelloWorld
 
 		$requestData['accountId'] = $accountId;
 
-		assertType("hasOffsetValue('accountId', int)&hasOffsetValue('errorColor', string|null)&hasOffsetValue('theme', array&hasOffsetValue('backgroundColor', string|null)&hasOffsetValue('headerImage', (array&hasOffsetValue('id', int))|null)&hasOffsetValue('textColor', string|null))&non-empty-array", $requestData);
+		assertType("non-empty-array&hasOffsetValue('accountId', int)&hasOffsetValue('errorColor', string|null)&hasOffsetValue('theme', non-empty-array&hasOffsetValue('backgroundColor', string|null)&hasOffsetValue('headerImage', (non-empty-array&hasOffsetValue('id', int))|null)&hasOffsetValue('textColor', string|null))", $requestData);
 
 		return $requestData;
 	}

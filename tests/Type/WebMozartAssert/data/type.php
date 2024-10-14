@@ -152,37 +152,37 @@ class TypeTest
 	public function isArray($a, $b): void
 	{
 		Assert::isArray($a);
-		assertType('array', $a);
+		assertType('array<mixed, mixed>', $a);
 
 		Assert::nullOrIsArray($b);
-		assertType('array|null', $b);
+		assertType('array<mixed, mixed>|null', $b);
 	}
 
 	public function isTraversable($a, $b): void
 	{
 		Assert::isTraversable($a);
-		assertType('array|Traversable', $a);
+		assertType('array<mixed, mixed>|Traversable', $a);
 
 		Assert::nullOrIsTraversable($b);
-		assertType('array|Traversable|null', $b);
+		assertType('array<mixed, mixed>|Traversable|null', $b);
 	}
 
 	public function isIterable($a, $b): void
 	{
 		Assert::isIterable($a);
-		assertType('array|Traversable', $a);
+		assertType('array<mixed, mixed>|Traversable', $a);
 
 		Assert::nullOrIsIterable($b);
-		assertType('array|Traversable|null', $b);
+		assertType('array<mixed, mixed>|Traversable|null', $b);
 	}
 
 	public function isCountable($a, $b): void
 	{
 		Assert::isCountable($a);
-		assertType('array|Countable', $a);
+		assertType('array<mixed, mixed>|Countable', $a);
 
 		Assert::nullOrIsCountable($b);
-		assertType('array|Countable|null', $b);
+		assertType('array<mixed, mixed>|Countable|null', $b);
 	}
 
 	public function isInstanceOf($a, $b, $c, $d): void
@@ -300,10 +300,10 @@ class TypeTest
 	public function isArrayAccessible($a, $b): void
 	{
 		Assert::isArrayAccessible($a);
-		assertType('array|ArrayAccess', $a);
+		assertType('array<mixed, mixed>|ArrayAccess', $a);
 
 		Assert::nullOrIsArrayAccessible($b);
-		assertType('array|ArrayAccess|null', $b);
+		assertType('array<mixed, mixed>|ArrayAccess|null', $b);
 	}
 }
 
