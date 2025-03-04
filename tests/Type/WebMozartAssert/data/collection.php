@@ -86,12 +86,12 @@ class CollectionTest
 	 * @param (CollectionFoo|stdClass)[] $b
 	 * @param CollectionFoo[] $c
 	 */
-	public function allNotInstanceOf(array $a, array $b, array $c): void
+	public function allNotInstanceOf(array $a, array $b, array $c, \stdClass $std): void
 	{
 		Assert::allNotInstanceOf($a, CollectionBar::class);
 		assertType('array<PHPStan\Type\WebMozartAssert\CollectionFoo>', $a);
 
-		Assert::allNotInstanceOf($b, new stdClass());
+		Assert::allNotInstanceOf($b, $std);
 		assertType('array<PHPStan\Type\WebMozartAssert\CollectionFoo>', $b);
 
 		Assert::allNotInstanceOf($c, 17);
